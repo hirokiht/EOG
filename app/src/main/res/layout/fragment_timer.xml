@@ -1,0 +1,34 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent" tools:context="tw.edu.ncku.eog.TimerFragment">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="100sp"
+        android:id="@+id/textView"
+        android:layout_gravity="center" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:indeterminate="false"
+        android:rotation="-90"
+        android:max="30"
+        android:progress="30"
+        android:progressDrawable="@drawable/circular_progress_bar"
+        android:layout_gravity="center" />
+
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/testButton"
+        android:textOff="@string/start"
+        android:textOn="@string/reset"
+        android:onClick="onButtonClick"
+        android:enabled="false"
+        android:layout_gravity="center_horizontal|bottom" />
+
+</FrameLayout>
