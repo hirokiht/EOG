@@ -29,29 +29,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
     private TextView timerText;
     private ProgressBar timerProgress;
     private boolean start = false;
-    private CountDownTimer timer = new CountDownTimer(30000, 1000) {
-        @Override
-        public void onTick(long millisUntilFinished) {
-            timerText.setText(String.valueOf(millisUntilFinished/1000));
-            timerProgress.setProgress((int)millisUntilFinished/1000);
-        }
-
-        @Override
-        public void onFinish() {
-            start = false;
-            toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK);
-            timerText.setTextColor(0xffff0000); //red
-            timerText.setText("0");
-            timerProgress.setProgress(0);
-            AlphaAnimation anim = new AlphaAnimation(0.0f, 1.0f);
-            anim.setDuration(40); //You can manage the blinking time with this parameter
-            anim.setStartOffset(160);
-            anim.setRepeatMode(Animation.REVERSE);
-            anim.setRepeatCount(5);
-            timerText.startAnimation(anim);
-            timerCallback.onTimerStateChange(false, true);
-        }
-    };
+    private CountDownTimer timer;
 
     private OnTimerListener timerCallback;
 
@@ -76,7 +54,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         timerText = (TextView) view.findViewById(R.id.textView);
         testButton = (ToggleButton) view.findViewById(R.id.testButton);
         if(savedInstanceState != null && savedInstanceState.containsKey("progress")){
-            int progress = savedInstanceState.getInt("progress",30);
+            int progress = savedInstanceState.getInt("progress",getResources().getInteger(R.integer.countdown_seconds));
             timerProgress.setProgress(progress);
             timerText.setText(String.valueOf(progress));
             if(progress == 0)
@@ -96,6 +74,29 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnTimerListener");
         }
+        timer = new CountDownTimer(activity.getResources().getInteger(R.integer.countdown_seconds)*1000, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timerText.setText(String.valueOf(millisUntilFinished/1000));
+                timerProgress.setProgress((int)millisUntilFinished/1000);
+            }
+
+            @Override
+            public void onFinish() {
+                start = false;
+                toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK);
+                timerText.setTextColor(0xffff0000); //red
+                timerText.setText("0");
+                timerProgress.setProgress(0);
+                AlphaAnimation anim = new AlphaAnimation(0.0f, 1.0f);
+                anim.setDuration(40); //You can manage the blinking time with this parameter
+                anim.setStartOffset(160);
+                anim.setRepeatMode(Animation.REVERSE);
+                anim.setRepeatCount(5);
+                timerText.startAnimation(anim);
+                timerCallback.onTimerStateChange(false, true);
+            }
+        };
     }
 
     @Override
@@ -146,11 +147,11 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
                 }
                 if(timerText != null) {
                     timerText.setTextColor(0xff000000); //BLACK
-                    timerText.setText(ready ? "30" : "-");
+                    timerText.setText(ready ? String.valueOf(getResources().getInteger(R.integer.countdown_seconds)) : "-");
                 }
             }
         });
-        timerProgress.setProgress(30);
+        timerProgress.setProgress(getResources().getInteger(R.integer.countdown_seconds));
         if(timer != null)
             timer.cancel();
         start = false;

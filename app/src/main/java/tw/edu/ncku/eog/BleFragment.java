@@ -70,7 +70,12 @@ public class BleFragment extends Fragment {
                 setDevice(null);
                 adcCallback.onConnectionStateChange(newState);
                 if(deviceSpinner != null)
-                    deviceSpinner.setSelection(0);
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            deviceSpinner.setSelection(0);
+                        }
+                    });
             }else adcCallback.onConnectionStateChange(newState);
         }
 
