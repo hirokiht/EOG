@@ -227,6 +227,8 @@ public class BleFragment extends Fragment {
         samplingPeriod = -1;
         busy = true;
         btGatt = this.device != null? this.device.connectGatt(getActivity().getApplicationContext(), false, btGattCb) : null;
+        if(btGatt == null)
+            adcCallback.onConnectionStateChange(BluetoothProfile.STATE_DISCONNECTED);
     }
 
     public void setAdcCallback(AdcListener cb){
