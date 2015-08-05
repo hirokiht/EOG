@@ -6,6 +6,7 @@ import android.media.ToneGenerator;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,8 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
     private ProgressBar timerProgress;
     private boolean start = false;
     private CountDownTimer timer;
+    private int countdown_seconds = 0;
+    private final Handler handler = new Handler();
 
     private OnTimerListener timerCallback;
 
@@ -74,6 +77,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnTimerListener");
         }
+        countdown_seconds = getResources().getInteger(R.integer.countdown_seconds);
         if(timer != null)
             return;
         timer = new CountDownTimer(activity.getResources().getInteger(R.integer.countdown_seconds)*1000, 1000) {
@@ -141,7 +145,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
     }
 
     public void reset(final boolean ready){
-        getActivity().runOnUiThread(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() {
                 if(testButton != null){
@@ -150,11 +154,11 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
                 }
                 if(timerText != null) {
                     timerText.setTextColor(0xff000000); //BLACK
-                    timerText.setText(ready ? String.valueOf(getResources().getInteger(R.integer.countdown_seconds)) : "-");
+                    timerText.setText(ready ? String.valueOf(countdown_seconds) : "-");
                 }
             }
         });
-        timerProgress.setProgress(getResources().getInteger(R.integer.countdown_seconds));
+        timerProgress.setProgress(countdown_seconds);
         if(timer != null)
             timer.cancel();
         start = false;
