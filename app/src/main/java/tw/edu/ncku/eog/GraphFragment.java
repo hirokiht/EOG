@@ -13,6 +13,7 @@ import android.widget.ProgressBar;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.Viewport;
+import com.jjoe64.graphview.series.BaseSeries;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -24,13 +25,14 @@ public class GraphFragment extends Fragment {
     private final static int BEGIN_FREQ = 8, END_FREQ = 12;
 
     private ProgressBar energyMeter;
-    private GraphView graphView;
-    private final LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
+    private GraphView spectrumGraph, energyGraph;
+    private final BaseSeries<DataPoint> spectrumSeries = new LineGraphSeries<>(),
+        rawDataSeries = new LineGraphSeries<>(), alphaEnergySeries = new LineGraphSeries<>();
     private final Handler handler = new Handler();
     private Runnable task;
 
-
     public GraphFragment() {
+        setRetainInstance(true);
         // Required empty public constructor
     }
 
@@ -40,17 +42,30 @@ public class GraphFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_graph, container, false);
-        graphView = (GraphView) view.findViewById(R.id.graph);
+        spectrumGraph = (GraphView) view.findViewById(R.id.spectrum_graph);
         energyMeter = (ProgressBar) view.findViewById(R.id.energyMeter);
-        graphView.setTitle(getString(R.string.spectrum));
-        graphView.addSeries(series);
-        Viewport viewport = graphView.getViewport();
+        spectrumGraph.setTitle(getString(R.string.spectrum));
+        spectrumGraph.addSeries(spectrumSeries);
+        Viewport viewport = spectrumGraph.getViewport();
         viewport.setXAxisBoundsManual(true);
         viewport.setYAxisBoundsManual(true);
         viewport.setMaxY(100);
-        GridLabelRenderer labelRenderer = graphView.getGridLabelRenderer();
+        GridLabelRenderer labelRenderer = spectrumGraph.getGridLabelRenderer();
         labelRenderer.setHorizontalAxisTitle(getString(R.string.x_label));
         labelRenderer.setVerticalAxisTitle(getString(R.string.y_label));
+        energyGraph = (GraphView) view.findViewById(R.id.energy_graph);
+        energyGraph.setTitle("Raw Data/Energy/Time Graph");
+        energyGraph.addSeries(alphaEnergySeries);
+        rawDataSeries.setColor(0xffff0000);
+        energyGraph.getSecondScale().addSeries(rawDataSeries);
+        energyGraph.getSecondScale().setMaxY(100);
+        viewport = energyGraph.getViewport();
+        viewport.setXAxisBoundsManual(true);
+        viewport.setMaxX(30);
+        labelRenderer = energyGraph.getGridLabelRenderer();
+        labelRenderer.setHorizontalAxisTitle("time (s)");
+        labelRenderer.setVerticalAxisTitle("Energy Ratio (%)");
+        labelRenderer.setVerticalLabelsSecondScaleColor(0xffff0000);
         view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1.5f));
         return view;
     }
@@ -62,13 +77,15 @@ public class GraphFragment extends Fragment {
     }
 
     public void resetData(){
-        resetData(null);
+        spectrumSeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
+        alphaEnergySeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
+        rawDataSeries.resetData(new DataPoint[]{new DataPoint(0,0)});
     }
 
     public void resetData(float[] data){
         final DataPoint[] dataPoints = data == null ? new DataPoint[]{new DataPoint(0,0)} : new DataPoint[data.length];
         if(data == null){
-            series.resetData(dataPoints);
+            spectrumSeries.resetData(dataPoints);
             return;
         }
         float max = 0f, sum = 0f, power = 0f;
@@ -82,13 +99,24 @@ public class GraphFragment extends Fragment {
         for(int i = 0 ; i < data.length; i++)
             dataPoints[i] = new DataPoint((double)i,(double)data[i]/sum*100);
         final float maxRatio = max/sum*100;
-        energyMeter.setProgress((int)(power/sum*100+0.5));
+        final double powerRatio = power/sum*100+0.5;
+        energyMeter.setProgress((int)powerRatio);
         handler.post(task = new Runnable() {
             @Override
             public void run() {
-                series.resetData(dataPoints);
-                graphView.getViewport().setMaxX(dataPoints.length);
-                graphView.getViewport().setMaxY(maxRatio);
+                spectrumSeries.resetData(dataPoints);
+                spectrumGraph.getViewport().setMaxX(dataPoints.length);
+                spectrumGraph.getViewport().setMaxY(maxRatio);
+                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX()+1, powerRatio), true, 30);
+            }
+        });
+    }
+
+    public void appendRawData(final float data){
+        handler.post(task = new Runnable() {
+            @Override
+            public void run() {
+                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + 0.008, data), true, 30000);
             }
         });
     }

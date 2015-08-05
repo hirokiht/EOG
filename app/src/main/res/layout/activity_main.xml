@@ -12,12 +12,13 @@
     tools:context=".MainActivity">
 
     <fragment
-        android:layout_width="match_parent"
+        android:layout_width="200dp"
+        android:layout_gravity="center_horizontal"
         android:layout_height="match_parent"
         android:name="tw.edu.ncku.eog.TimerFragment"
         android:id="@+id/fragment"
         tools:layout="@layout/fragment_timer"
-        android:layout_weight="1.0" />
+        android:layout_weight="1.5" />
 
    <fragment
         android:layout_width="match_parent"
@@ -25,7 +26,7 @@
         android:name="tw.edu.ncku.eog.GraphFragment"
         android:id="@+id/graphFragment"
         tools:layout="@layout/fragment_graph"
-        android:layout_weight="1.5" />
+        android:layout_weight="1.0" />
 
 
 </LinearLayout>

@@ -38,7 +38,9 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     public void onTimerStateChange(boolean started, boolean finished) {
         state = finished? ActivityState.COMPLETE : started? ActivityState.BEGIN_TEST : ActivityState.READY;
         checkState();
-        if(finished || !started)
+        if(finished)
+            graphFragment.resetData(null);
+        else if(!started)
             graphFragment.resetData();
     }
 
@@ -131,6 +133,8 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ShortBuffer)dataBuffer).put(buffer);
         if(!dataBuffer.hasRemaining())
             processBuffer();
+        for(short data : buffer)
+            graphFragment.appendRawData(data*100f/2048f);
     }
 
     @Override
