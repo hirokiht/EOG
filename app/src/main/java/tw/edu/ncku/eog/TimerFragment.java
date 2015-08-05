@@ -74,6 +74,8 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString() + " must implement OnTimerListener");
         }
+        if(timer != null)
+            return;
         timer = new CountDownTimer(activity.getResources().getInteger(R.integer.countdown_seconds)*1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
