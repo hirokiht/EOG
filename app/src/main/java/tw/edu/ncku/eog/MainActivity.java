@@ -13,7 +13,9 @@ import android.os.Handler;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 
 import org.jtransforms.fft.FloatFFT_1D;
 
@@ -27,12 +29,13 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private final static int BUFFER_SIZE = 128;
     private final static int BEGIN_FREQ = 8, END_FREQ = 12;
     private FragmentManager fragmentManager;
-    private BleFragment bleFragment;
+    private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
     private ActivityState state = ActivityState.ENABLE_BLE;
     private short sampling_period = 7;
     private Buffer dataBuffer;
     private ProgressBar energyMeter;
+    private Spinner deviceSelector;
 
     @Override
     public void onTimerStateChange(boolean started, boolean finished) {
@@ -49,7 +52,8 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         super.onCreate(savedInstanceState);
         fragmentManager = getFragmentManager();
         setContentView(R.layout.activity_main);
-        bleFragment = (BleFragment) fragmentManager.findFragmentById(R.id.bleFragment);
+        if(fragmentManager.findFragmentByTag("bleFragment") == null)
+            fragmentManager.beginTransaction().add(bleFragment,"bleFragment").commit();
         timerFragment = (TimerFragment) fragmentManager.findFragmentById(R.id.fragment);
         energyMeter = (ProgressBar) findViewById(R.id.energyMeter);
         if(savedInstanceState != null && savedInstanceState.containsKey("state")) {
@@ -86,6 +90,16 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             }else if (fragmentManager.findFragmentByTag("waitForBt") != null)
                 ((DialogFragment)fragmentManager.findFragmentByTag("waitForBt")).dismiss();
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        deviceSelector = (Spinner) menu.findItem(R.id.deviceSpinner).getActionView();
+        deviceSelector.setSelection(1);
+        bleFragment.setDeviceSpinner(deviceSelector);
+        return true;
     }
 
     @Override

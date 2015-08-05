@@ -14,7 +14,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -191,16 +190,16 @@ public class BleFragment extends Fragment {
         outState.putParcelable(ARG_DEVICE, device);
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_ble, container, false);
-        deviceSpinner = (Spinner) view.findViewById(R.id.spinner);
+    protected void setDeviceSpinner(Spinner spinner){
+        deviceSpinner = spinner;
         deviceSpinner.setAdapter(arrayAdapter);
+        if(device != null)
+            deviceSpinner.setSelection(arrayAdapter.getPosition(device));
         deviceSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if(view == null)
+                    return;
                 if (device != arrayAdapter.getItem(position))
                     setDevice(arrayAdapter.getItem(position));
                 else return;
@@ -211,11 +210,10 @@ public class BleFragment extends Fragment {
 
             }
         });
-        return view;
     }
 
     private void setDevice(BluetoothDevice device){
-        if(btGatt != null)
+        if(btGatt != null && device != this.device)
             btGatt.close();
         if(this.device == null) {
             this.device = device;
@@ -255,6 +253,7 @@ public class BleFragment extends Fragment {
                             (TextView) super.getDropDownView(position, convertView, parent);
                     textView.setText(device == null ? getString(R.string.none_device) : device.getName() == null ? device.getAddress() :
                             device.getName() + " (" + device.getAddress() + ")");
+                    textView.setTextAppearance(getContext(), R.style.TextAppearance_AppCompat_Widget_ActionBar_Subtitle_Inverse);
                     return textView;
                 }
 
@@ -266,6 +265,7 @@ public class BleFragment extends Fragment {
                     textView.setText(device == null ? getString(R.string.select_device) :
                             device.getName() == null ? device.getAddress() :
                                     device.getName() + " (" + device.getAddress() + ")");
+                    textView.setTextAppearance(getContext(), R.style.TextAppearance_AppCompat_Widget_ActionBar_Subtitle_Inverse);
                     return textView;
                 }
             };

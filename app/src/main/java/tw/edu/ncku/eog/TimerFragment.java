@@ -128,9 +128,10 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
                 testButton.setEnabled(true);
             }
         });
-        if(!start)
+        if(!start && timerProgress.getProgress() == 30) {
             timer.start();
-        start = true;
+            start = true;
+        }
     }
 
     public void reset(){
