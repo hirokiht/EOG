@@ -9,39 +9,23 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context=".MainActivity"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    tools:context=".MainActivity">
 
     <fragment
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center"
         android:name="tw.edu.ncku.eog.TimerFragment"
         android:id="@+id/fragment"
         tools:layout="@layout/fragment_timer"
         android:layout_weight="1.0" />
 
-    <TextView
-        android:id="@+id/energyLabel"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:layout_width="wrap_content"
+   <fragment
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/alpha_energy" />
-    <ProgressBar
-        android:id="@+id/energyMeter"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:indeterminate="false"
-        android:max="100"
-        android:progress="0"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:name="tw.edu.ncku.eog.GraphFragment"
+        android:id="@+id/graphFragment"
+        tools:layout="@layout/fragment_graph"
+        android:layout_weight="1.5" />
 
-    <com.jjoe64.graphview.helper.GraphViewXML
-        android:id="@+id/graph"
-        android:title="@string/spectrum"
-        app:seriesData="0=0"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="2.0" />
 
 </LinearLayout>
