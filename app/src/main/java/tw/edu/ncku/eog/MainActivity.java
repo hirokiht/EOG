@@ -17,6 +17,12 @@ import android.view.Menu;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 
+import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.GridLabelRenderer;
+import com.jjoe64.graphview.Viewport;
+import com.jjoe64.graphview.series.DataPoint;
+import com.jjoe64.graphview.series.LineGraphSeries;
+
 import org.jtransforms.fft.FloatFFT_1D;
 
 import java.nio.Buffer;
@@ -32,15 +38,18 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
     private ActivityState state = ActivityState.ENABLE_BLE;
-    private short sampling_period = 7;
+    private short sampling_period = 8;
     private Buffer dataBuffer;
     private ProgressBar energyMeter;
-    private Spinner deviceSelector;
+    private GraphView graphView;
+    private LineGraphSeries<DataPoint> series = new LineGraphSeries<>();
 
     @Override
     public void onTimerStateChange(boolean started, boolean finished) {
         state = finished? ActivityState.COMPLETE : started? ActivityState.BEGIN_TEST : ActivityState.READY;
         checkState();
+        if(finished || !started)
+            series.resetData(new DataPoint[]{new DataPoint(0,0)});
     }
 
     private enum ActivityState{
@@ -56,6 +65,17 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             fragmentManager.beginTransaction().add(bleFragment,"bleFragment").commit();
         timerFragment = (TimerFragment) fragmentManager.findFragmentById(R.id.fragment);
         energyMeter = (ProgressBar) findViewById(R.id.energyMeter);
+        graphView = (GraphView) findViewById(R.id.graph);
+        graphView.addSeries(series);
+        Viewport viewport = graphView.getViewport();
+        viewport.setXAxisBoundsManual(true);
+        viewport.setYAxisBoundsManual(true);
+        viewport.setMaxX(BUFFER_SIZE / 2);
+        viewport.setMaxY(100);
+        viewport.setScalable(true);
+        GridLabelRenderer labelRenderer = graphView.getGridLabelRenderer();
+        labelRenderer.setHorizontalAxisTitle(getString(R.string.x_label));
+        labelRenderer.setVerticalAxisTitle(getString(R.string.y_label));
         if(savedInstanceState != null && savedInstanceState.containsKey("state")) {
             state = (ActivityState) savedInstanceState.getSerializable("state");
             sampling_period = bleFragment.getSamplingPeriod();
@@ -96,8 +116,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main, menu);
-        deviceSelector = (Spinner) menu.findItem(R.id.deviceSpinner).getActionView();
-        deviceSelector.setSelection(1);
+        Spinner deviceSelector = (Spinner) menu.findItem(R.id.deviceSpinner).getActionView();
         bleFragment.setDeviceSpinner(deviceSelector);
         return true;
     }
@@ -282,13 +301,28 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         fft.realForward(data);
         float[] fftResult = new float[BUFFER_SIZE/2];
         float sum = 0f, power = 0f;
-        for(int i = 0 ; i < data.length ; i+=2)
-            sum += fftResult[i/2] = data[i]*data[i]+data[i+1]*data[i+1];
+        int maxI = 0;
+        for(int i = 0 ; i < data.length ; i+=2) {
+            sum += fftResult[i>>1] = data[i] * data[i] + data[i + 1] * data[i + 1];
+            if(fftResult[i>>1] > fftResult[maxI])
+                maxI = i>>1;
+        }
         int beginIndex = Math.round(BUFFER_SIZE*BEGIN_FREQ*sampling_period/1000f),
                 endIndex = Math.round(BUFFER_SIZE * END_FREQ * sampling_period / 1000f);
-        for(int i = beginIndex ; i < endIndex ; i++)
+        for(int i = beginIndex ; i < endIndex ; i++)    //calculate alpha power
             power += fftResult[i];
         int ratio = (int)(power*100f/sum+0.5f); //ratio in percentage
         energyMeter.setProgress(ratio);
+        final DataPoint[] dataPoints = new DataPoint[fftResult.length];
+        for(int i = 0 ; i < fftResult.length ; i++)
+            dataPoints[i] = new DataPoint((double)i,(double)fftResult[i]/sum*100);
+        final float max = Math.round(fftResult[maxI]/sum*100);
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                series.resetData(dataPoints);
+                graphView.getViewport().setMaxY(max);
+            }
+        });
     }
 }

@@ -1,6 +1,5 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="wrap_content"
-    android:layout_height="wrap_content" tools:context="tw.edu.ncku.eog.TimerFragment">
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"    android:layout_height="match_parent" tools:context="tw.edu.ncku.eog.TimerFragment">
 
     <TextView
         android:layout_width="wrap_content"
@@ -12,8 +11,8 @@
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="300dp"
-        android:layout_height="300dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:indeterminate="false"
         android:rotation="-90"
         android:max="30"

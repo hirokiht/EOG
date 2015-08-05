@@ -33,12 +33,23 @@
         android:layout_toEndOf="@+id/energyLabel" />
 
     <fragment
-        android:layout_width="wrap_content"
+        android:layout_width="200dp"
         android:layout_height="match_parent"
         android:name="tw.edu.ncku.eog.TimerFragment"
         android:id="@+id/fragment"
         tools:layout="@layout/fragment_timer"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true" />
+
+    <com.jjoe64.graphview.helper.GraphViewXML
+        android:id="@+id/graph"
+        android:title="@string/spectrum"
+        app:seriesData="0=0"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/energyLabel"
+        android:layout_toStartOf="@id/fragment"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true" />
 
 </RelativeLayout>
