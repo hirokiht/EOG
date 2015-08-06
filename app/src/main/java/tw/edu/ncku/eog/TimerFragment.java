@@ -57,7 +57,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         timerText = (TextView) view.findViewById(R.id.textView);
         testButton = (ToggleButton) view.findViewById(R.id.testButton);
         if(savedInstanceState != null && savedInstanceState.containsKey("progress")){
-            int progress = savedInstanceState.getInt("progress",getResources().getInteger(R.integer.countdown_seconds));
+            int progress = savedInstanceState.getInt("progress",countdown_seconds);
             timerProgress.setProgress(progress);
             timerText.setText(String.valueOf(progress));
             if(progress == 0)
@@ -80,7 +80,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         countdown_seconds = getResources().getInteger(R.integer.countdown_seconds);
         if(timer != null)
             return;
-        timer = new CountDownTimer(activity.getResources().getInteger(R.integer.countdown_seconds)*1000, 1000) {
+        timer = new CountDownTimer(countdown_seconds*1000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 timerText.setText(String.valueOf(millisUntilFinished/1000));
@@ -134,7 +134,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
                 testButton.setEnabled(true);
             }
         });
-        if(!start && timerProgress.getProgress() == 30) {
+        if(!start && timerProgress.getProgress() == countdown_seconds) {
             timer.start();
             start = true;
         }
@@ -148,11 +148,11 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         handler.post(new Runnable() {
             @Override
             public void run() {
-                if(testButton != null){
+                if (testButton != null) {
                     testButton.setEnabled(ready);
                     testButton.setChecked(false);
                 }
-                if(timerText != null) {
+                if (timerText != null) {
                     timerText.setTextColor(0xff000000); //BLACK
                     timerText.setText(ready ? String.valueOf(countdown_seconds) : "-");
                 }
