@@ -15,6 +15,7 @@ import android.view.animation.Animation;
 import android.widget.CompoundButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.ToggleButton;
 
 
@@ -29,6 +30,7 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
     private ToggleButton testButton;
     private TextView timerText;
     private ProgressBar timerProgress;
+    private TimePicker timePicker;
     private boolean start = false;
     private CountDownTimer timer;
     private int countdown_seconds = 0;
@@ -55,6 +57,9 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
         View view = inflater.inflate(R.layout.fragment_timer, container, false);
         timerProgress = (ProgressBar) view.findViewById(R.id.progressBar);
         timerText = (TextView) view.findViewById(R.id.textView);
+        timePicker = (TimePicker) view.findViewById(R.id.timePicker);
+        timePicker.setIs24HourView(true);
+        timePicker.setEnabled(false);
         testButton = (ToggleButton) view.findViewById(R.id.testButton);
         if(savedInstanceState != null && savedInstanceState.containsKey("progress")){
             int progress = savedInstanceState.getInt("progress",countdown_seconds);
@@ -62,8 +67,13 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
             timerText.setText(String.valueOf(progress));
             if(progress == 0)
                 timerText.setTextColor(0xffff0000); //red
+            timePicker.setCurrentHour(progress/60);
+            timePicker.setCurrentMinute(progress%60);
             testButton.setEnabled(savedInstanceState.getBoolean("btnEnabled", false));
             testButton.setChecked(start);
+        }else{
+            timePicker.setCurrentHour(countdown_seconds / 60);
+            timePicker.setCurrentMinute(countdown_seconds%60);
         }
         testButton.setOnCheckedChangeListener(this);
         return view;
@@ -78,31 +88,6 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
             throw new ClassCastException(activity.toString() + " must implement OnTimerListener");
         }
         countdown_seconds = getResources().getInteger(R.integer.countdown_seconds);
-        if(timer != null)
-            return;
-        timer = new CountDownTimer(countdown_seconds*1000, 1000) {
-            @Override
-            public void onTick(long millisUntilFinished) {
-                timerText.setText(String.valueOf(millisUntilFinished/1000));
-                timerProgress.setProgress((int)millisUntilFinished/1000);
-            }
-
-            @Override
-            public void onFinish() {
-                start = false;
-                toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK);
-                timerText.setTextColor(0xffff0000); //red
-                timerText.setText("0");
-                timerProgress.setProgress(0);
-                AlphaAnimation anim = new AlphaAnimation(0.0f, 1.0f);
-                anim.setDuration(40); //You can manage the blinking time with this parameter
-                anim.setStartOffset(160);
-                anim.setRepeatMode(Animation.REVERSE);
-                anim.setRepeatCount(5);
-                timerText.startAnimation(anim);
-                timerCallback.onTimerStateChange(false, true);
-            }
-        };
     }
 
     @Override
@@ -128,13 +113,44 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
     }
 
     public void start(){
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                testButton.setEnabled(true);
-            }
-        });
-        if(!start && timerProgress.getProgress() == countdown_seconds) {
+        int countdown = (timePicker.getCurrentMinute()+60*timePicker.getCurrentHour())*1000;
+        if(!start && countdown > 0 && timer == null) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    testButton.setEnabled(true);
+                    timePicker.setEnabled(false);
+                }
+            });
+            timer = new CountDownTimer(countdown, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    timerText.setText(String.valueOf(millisUntilFinished/1000));
+                    timerProgress.setProgress((int) millisUntilFinished / 1000);
+                    timePicker.setCurrentHour((int)millisUntilFinished/1000/60);
+                    timePicker.setCurrentMinute((int)millisUntilFinished/1000%60);
+                }
+
+                @Override
+                public void onFinish() {
+                    start = false;
+                    toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK);
+                    timerText.setTextColor(0xffff0000); //red
+                    timerText.setText("0");
+                    timerProgress.setProgress(0);
+                    timePicker.setCurrentHour(0);
+                    timePicker.setCurrentMinute(0);
+                    AlphaAnimation anim = new AlphaAnimation(0.0f, 1.0f);
+                    anim.setDuration(40); //You can manage the blinking time with this parameter
+                    anim.setStartOffset(160);
+                    anim.setRepeatMode(Animation.REVERSE);
+                    anim.setRepeatCount(5);
+                    timerText.startAnimation(anim);
+                    timePicker.startAnimation(anim);
+                    timerCallback.onTimerStateChange(false, true);
+                    timer = null;
+                }
+            };
             timer.start();
             start = true;
         }
@@ -156,11 +172,18 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
                     timerText.setTextColor(0xff000000); //BLACK
                     timerText.setText(ready ? String.valueOf(countdown_seconds) : "-");
                 }
+                if (timePicker != null) {
+                    timePicker.setCurrentHour(countdown_seconds / 60);
+                    timePicker.setCurrentMinute(countdown_seconds % 60);
+                    timePicker.setEnabled(ready);
+                }
             }
         });
         timerProgress.setProgress(countdown_seconds);
-        if(timer != null)
+        if(timer != null) {
             timer.cancel();
+            timer = null;
+        }
         start = false;
     }
 }
