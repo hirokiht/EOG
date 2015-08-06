@@ -1,5 +1,6 @@
 package tw.edu.ncku.eog;
 
+import android.annotation.TargetApi;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
@@ -160,6 +161,7 @@ public class BleFragment extends Fragment {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if(btAdapter.getBluetoothLeScanner() != null)
                 btAdapter.getBluetoothLeScanner().startScan(new ScanCallback() {
+                    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
                     @Override
                     public void onScanResult(int callbackType, ScanResult result) {
                         super.onScanResult(callbackType, result);
@@ -202,7 +204,6 @@ public class BleFragment extends Fragment {
                     return;
                 if (device != arrayAdapter.getItem(position))
                     setDevice(arrayAdapter.getItem(position));
-                else return;
             }
 
             @Override
