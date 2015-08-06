@@ -179,7 +179,7 @@ public class BleFragment extends Fragment {
                         arrayAdapter.add(device);
                 }
             });
-        }
+        } else throw new UnsupportedOperationException("Only support Android 4.3 and above!");
     }
 
     public BleFragment() {
