@@ -92,6 +92,7 @@ public class GraphFragment extends Fragment {
             return;
         }
         float max = 0f, sum = 0f, power = 0f;
+        data[0] = 0f;
         for(float d : data) {
             if(d > max)
                 max = d;
@@ -100,7 +101,7 @@ public class GraphFragment extends Fragment {
         for(int i = BEGIN_FREQ ; i < END_FREQ ; i++)
             power += data[i];
         for(int i = 0 ; i < data.length; i++)
-            dataPoints[i] = new DataPoint((double)i,(double)data[i]/sum*100);
+            dataPoints[i] = new DataPoint((double)i/(samplingPeriod*2f*data.length),(double)data[i]/sum*100);
         final float maxRatio = max/sum*100;
         final double powerRatio = power/sum*100+0.5;
         energyMeter.setProgress((int) powerRatio);
