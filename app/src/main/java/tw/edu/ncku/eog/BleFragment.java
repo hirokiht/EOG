@@ -153,7 +153,7 @@ public class BleFragment extends Fragment {
         void onConnectionStateChange(int newState);
     }
 
-    public static void discoverDevices(final AdcListener listener) {
+    public static void discoverDevices() {
         BluetoothAdapter btAdapter = BluetoothAdapter.getDefaultAdapter();
         if(btAdapter == null || !btAdapter.isEnabled())
             return;

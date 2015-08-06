@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             state = (ActivityState) savedInstanceState.getSerializable("state");
             sampling_period = bleFragment.getSamplingPeriod();
         }
+        graphFragment.setSamplingPeriod(sampling_period/1000f); //convert into second
         checkState();
         if(savedInstanceState == null && state == ActivityState.ENABLE_BLE)  //request bt if it is the first time starting this app
             startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -104,8 +105,9 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
 
     @Override
     public void onSamplingPeriodChanged(short sampling_period) {
-        if(checkState() == ActivityState.READY && sampling_period != this.sampling_period)
-            bleFragment.saveSamplingPeriod(this.sampling_period);
+        if(sampling_period == this.sampling_period || state == ActivityState.SELECT_DEVICE || state == ActivityState.ENABLE_BLE)
+            return;
+        bleFragment.saveSamplingPeriod(this.sampling_period);
     }
 
     @Override
@@ -115,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ShortBuffer)dataBuffer).put(data);
         if(!dataBuffer.hasRemaining())
             processBuffer();
+        graphFragment.appendRawData(data*100f/2048f);
     }
 
     @Override
@@ -124,6 +127,10 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ByteBuffer)dataBuffer).put(buffer);
         if(!dataBuffer.hasRemaining())
             processBuffer();
+        float[] data = new float[buffer.length];
+        for(int i = 0 ; i < buffer.length ; i++)
+            data[i] = buffer[i]*100f / 256f;
+        graphFragment.appendRawData(data);
     }
 
     @Override
@@ -133,8 +140,10 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ShortBuffer)dataBuffer).put(buffer);
         if(!dataBuffer.hasRemaining())
             processBuffer();
-        for(short data : buffer)
-            graphFragment.appendRawData(data*100f/2048f);
+        float[] data = new float[buffer.length];
+        for(int i = 0 ; i < buffer.length ; i++)
+            data[i] = buffer[i]*100f/2048f;
+        graphFragment.appendRawData(data);
     }
 
     @Override
@@ -234,7 +243,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
                     state = ActivityState.READY;
                     return checkState();
                 }
-                BleFragment.discoverDevices(this);
+                BleFragment.discoverDevices();
                 break;
             case READY:
                 if(!BluetoothAdapter.getDefaultAdapter().isEnabled() || bleFragment == null || bleFragment.getDevice() == null){
@@ -247,7 +256,6 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
                 if(bleFragment.getSamplingPeriod() != sampling_period)
                     bleFragment.saveSamplingPeriod(sampling_period);
                 timerFragment.reset(true);
-                bleFragment.setBuffered12bitAdcNotification(false);
                 break;
             case BEGIN_TEST:
                 if(!BluetoothAdapter.getDefaultAdapter().isEnabled() || bleFragment == null || bleFragment.getDevice() == null){
@@ -262,13 +270,14 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
                     state = BluetoothAdapter.getDefaultAdapter().isEnabled()? ActivityState.SELECT_DEVICE : ActivityState.ENABLE_BLE;
                     return checkState();
                 }
-                bleFragment.setBuffered12bitAdcNotification(false);
                 break;
         }
         return state;
     }
 
     private void processBuffer(){
+        if(state != ActivityState.BEGIN_TEST)
+            bleFragment.setBuffered12bitAdcNotification(false);
         float[] data = new float[BUFFER_SIZE];
         if(dataBuffer instanceof  ShortBuffer)
             for(int i = 0 ; i < BUFFER_SIZE ; i++)

@@ -4,6 +4,7 @@ package tw.edu.ncku.eog;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ public class GraphFragment extends Fragment {
         rawDataSeries = new LineGraphSeries<>(), alphaEnergySeries = new LineGraphSeries<>();
     private final Handler handler = new Handler();
     private Runnable task;
+    private float samplingPeriod = 8f/1000f; //in seconds
 
     public GraphFragment() {
         setRetainInstance(true);
@@ -61,7 +63,8 @@ public class GraphFragment extends Fragment {
         energyGraph.getSecondScale().setMaxY(100);
         viewport = energyGraph.getViewport();
         viewport.setXAxisBoundsManual(true);
-        viewport.setMaxX(30);
+        viewport.setScalable(true);
+        viewport.setScrollable(true);
         labelRenderer = energyGraph.getGridLabelRenderer();
         labelRenderer.setHorizontalAxisTitle("time (s)");
         labelRenderer.setVerticalAxisTitle("Energy Ratio (%)");
@@ -79,7 +82,7 @@ public class GraphFragment extends Fragment {
     public void resetData(){
         spectrumSeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
         alphaEnergySeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
-        rawDataSeries.resetData(new DataPoint[]{new DataPoint(0,0)});
+        rawDataSeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
     }
 
     public void resetData(float[] data){
@@ -100,23 +103,48 @@ public class GraphFragment extends Fragment {
             dataPoints[i] = new DataPoint((double)i,(double)data[i]/sum*100);
         final float maxRatio = max/sum*100;
         final double powerRatio = power/sum*100+0.5;
-        energyMeter.setProgress((int)powerRatio);
+        energyMeter.setProgress((int) powerRatio);
         handler.post(task = new Runnable() {
             @Override
             public void run() {
                 spectrumSeries.resetData(dataPoints);
                 spectrumGraph.getViewport().setMaxX(dataPoints.length);
                 spectrumGraph.getViewport().setMaxY(maxRatio);
-                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX()+1, powerRatio), true, 30);
+                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX() + (dataPoints.length * 2 * samplingPeriod), powerRatio), true, Integer.MAX_VALUE);
             }
         });
+    }
+
+    public float getSamplingPeriod(){
+        return samplingPeriod;
+    }
+
+    public void setSamplingPeriod(float period){
+        samplingPeriod = period;
     }
 
     public void appendRawData(final float data){
         handler.post(task = new Runnable() {
             @Override
             public void run() {
-                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + 0.008, data), true, 30000);
+                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + samplingPeriod, data), true, Integer.MAX_VALUE);
+                energyGraph.getViewport().setMinX(0);
+                energyGraph.getViewport().setMaxX(Math.ceil(rawDataSeries.getHighestValueX()));
+            }
+        });
+    }
+
+    public void appendRawData(@NonNull final float[] buffer ){
+        float sum = 0f;
+        for(float data : buffer)
+            sum += data;
+        final float avg = sum/buffer.length;
+        handler.post(task = new Runnable() {
+            @Override
+            public void run() {
+                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + (samplingPeriod * buffer.length), avg), true, Integer.MAX_VALUE);
+                energyGraph.getViewport().setMinX(0);
+                energyGraph.getViewport().setMaxX(Math.ceil(rawDataSeries.getHighestValueX()));
             }
         });
     }
