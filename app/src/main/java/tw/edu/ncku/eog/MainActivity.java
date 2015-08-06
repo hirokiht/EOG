@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ShortBuffer)dataBuffer).put(data);
         if(!dataBuffer.hasRemaining())
             processBuffer();
-        graphFragment.appendRawData(data*100f/2048f);
+        graphFragment.appendRawData(data*100f/4096f);
     }
 
     @Override
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             processBuffer();
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
-            data[i] = buffer[i]*100f/2048f;
+            data[i] = buffer[i]*100f/4096f;
         graphFragment.appendRawData(data);
     }
 
