@@ -18,6 +18,7 @@ import android.widget.Spinner;
 
 import org.jtransforms.fft.FloatFFT_1D;
 
+import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
@@ -26,6 +27,7 @@ import java.nio.ShortBuffer;
 public class MainActivity extends AppCompatActivity implements BleFragment.AdcListener, TimerFragment.OnTimerListener{
     private final static int REQUEST_ENABLE_BT = 1;
     private final static int BUFFER_SIZE = 128;
+    private static DataLogger dataLogger;
     private FragmentManager fragmentManager;
     private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
@@ -42,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             graphFragment.resetData(null);
         else if(!started)
             graphFragment.resetData();
+        else dataLogger.setFilename(String.valueOf(System.currentTimeMillis()));
     }
 
     private enum ActivityState{
@@ -52,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         fragmentManager = getFragmentManager();
+        if(dataLogger == null)
+            dataLogger = new DataLogger(getApplicationContext());
         setContentView(R.layout.activity_main);
         if(fragmentManager.findFragmentByTag("bleFragment") == null)
             fragmentManager.beginTransaction().add(bleFragment,"bleFragment").commit();
@@ -72,6 +77,11 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     protected void onSaveInstanceState(Bundle outState) {
         finishActivity(REQUEST_ENABLE_BT);
         outState.putSerializable("state", state);
+        try {
+            dataLogger.flushPostfixedData("RawData");
+        }catch(IOException ioe){
+            Log.d("onSaveInstanceState","IOException: "+ioe.getMessage());
+        }
         super.onSaveInstanceState(outState);
     }
 
@@ -117,7 +127,12 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         ((ShortBuffer)dataBuffer).put(data);
         if(!dataBuffer.hasRemaining())
             processBuffer();
-        graphFragment.appendRawData(data*100f/4096f);
+        try {
+            dataLogger.logPostfixedData("RawData", new short[]{data});
+        }catch(IOException ioe){
+            Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
+        }
+        graphFragment.appendRawData(data * 100f / 4096f);
     }
 
     @Override
@@ -130,6 +145,11 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
             data[i] = buffer[i]*100f / 256f;
+        try {
+            dataLogger.logPostfixedData("RawData", buffer);
+        }catch(IOException ioe){
+            Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
+        }
         graphFragment.appendRawData(data);
     }
 
@@ -143,6 +163,11 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
             data[i] = buffer[i]*100f/4096f;
+        try {
+            dataLogger.logPostfixedData("RawData", buffer);
+        }catch(IOException ioe){
+            Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
+        }
         graphFragment.appendRawData(data);
     }
 
@@ -293,6 +318,12 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         float[] fftResult = new float[BUFFER_SIZE/2];
         for(int i = 0 ; i < data.length ; i+=2)
             fftResult[i>>1] = data[i] * data[i] + data[i + 1] * data[i + 1];
+        try {
+            dataLogger.logPostfixedData("FFT", data);
+            dataLogger.flushPostfixedData("FFT");
+        }catch(IOException ioe){
+            Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
+        }
         graphFragment.resetData(fftResult);
     }
 }
