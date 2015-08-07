@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
     private static GraphFragment graphFragment;
-    private ActivityState state = ActivityState.ENABLE_BLE;
+    private static ActivityState state = ActivityState.ENABLE_BLE;
     private short sampling_period = 8;
     private Buffer dataBuffer;
 
@@ -263,7 +263,6 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
                     return checkState();
                 }
                 bleFragment.setBuffered12bitAdcNotification(true);
-                timerFragment.start();
                 break;
             case COMPLETE:
                 if(!BluetoothAdapter.getDefaultAdapter().isEnabled() || bleFragment == null || bleFragment.getDevice() == null){

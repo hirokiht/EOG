@@ -98,8 +98,12 @@ public class TimerFragment extends Fragment implements CompoundButton.OnCheckedC
 
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        if(buttonView == testButton)
+        if(buttonView == testButton) {
+            if(isChecked)
+                start();
+            else reset();
             timerCallback.onTimerStateChange(isChecked, false);
+        }
     }
 
     /**
