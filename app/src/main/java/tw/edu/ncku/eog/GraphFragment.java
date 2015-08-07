@@ -102,8 +102,8 @@ public class GraphFragment extends Fragment {
             power += data[i];
         for(int i = 0 ; i < data.length; i++)
             dataPoints[i] = new DataPoint((double)i/(samplingPeriod*2f*data.length),(double)data[i]/sum*100);
-        final float maxRatio = max/sum*100;
-        final double powerRatio = power/sum*100+0.5;
+        final float maxRatio = sum == 0? 1f : max/sum*100;
+        final double powerRatio = sum == 0? 0f : power/sum*100+0.5;
         energyMeter.setProgress((int) powerRatio*10);   //set range is 0% to 10%
         handler.post(task = new Runnable() {
             @Override
