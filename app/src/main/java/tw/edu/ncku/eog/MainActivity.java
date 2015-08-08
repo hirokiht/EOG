@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 
 
 public class MainActivity extends AppCompatActivity implements BleFragment.AdcListener, TimerFragment.OnTimerListener{
@@ -33,8 +34,9 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private TimerFragment timerFragment;
     private static GraphFragment graphFragment;
     private static ActivityState state = ActivityState.ENABLE_BLE;
-    private short sampling_period = 8;
-    private Buffer dataBuffer;
+    private static short sampling_period = 8;
+    private static int medianFilterWindowSize = 200;  //window size in ms for median filter
+    private static Buffer dataBuffer;
 
     @Override
     public void onTimerStateChange(boolean started, boolean finished) {
@@ -115,9 +117,9 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
 
     @Override
     public void onSamplingPeriodChanged(short sampling_period) {
-        if(sampling_period == this.sampling_period || state == ActivityState.SELECT_DEVICE || state == ActivityState.ENABLE_BLE)
+        if(sampling_period == MainActivity.sampling_period || state == ActivityState.SELECT_DEVICE || state == ActivityState.ENABLE_BLE)
             return;
-        bleFragment.saveSamplingPeriod(this.sampling_period);
+        bleFragment.saveSamplingPeriod(MainActivity.sampling_period);
     }
 
     @Override
@@ -299,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         return state;
     }
 
-    private void processBuffer(ByteBuffer dataBuffer){
+    private static void processBuffer(ByteBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
         for(int i = 0 ; i < data.length ; i++)
             data[i] = (0xFF&dataBuffer.get(i))/256f;
@@ -311,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         dataBuffer.put(buffer);
     }
 
-    private void processBuffer(ShortBuffer dataBuffer){
+    private static void processBuffer(ShortBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
         for(int i = 0 ; i < data.length ; i++)
             data[i] = dataBuffer.get(i)/ 4096f;
@@ -323,11 +325,17 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         dataBuffer.put(buffer);
     }
 
-    private void processBuffer(float[] data){
+    private static void processBuffer(float[] data){
         if(state != ActivityState.BEGIN_TEST)
             bleFragment.setBuffered12bitAdcNotification(false);
         Log.d("processBuffer", "start processing data...");
-        //TODO: apply median/mean filter to remove spikes.
+        if(medianFilterWindowSize > 0) {    //medianFilter is enabled and set
+            int size = medianFilterWindowSize / sampling_period;
+            for (int i = size / 2; i < data.length - size / 2; i++) {
+                float[] window = Arrays.copyOfRange(data, i - size / 2, i + size / 2);
+                data[i] = QuickSelect.getMedian(window);
+            }
+        }
         FloatFFT_1D fft = new FloatFFT_1D(data.length);
         fft.realForward(data);
         float[] fftResult = new float[BUFFER_SIZE/2];
