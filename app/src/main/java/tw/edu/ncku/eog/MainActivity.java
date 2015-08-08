@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             return;
         ((ShortBuffer)dataBuffer).put(data);
         if(!dataBuffer.hasRemaining())
-            processBuffer();
+            processBuffer((ShortBuffer)dataBuffer);
         try {
             dataLogger.logPostfixedData("RawData", new short[]{data});
         }catch(IOException ioe){
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             return;
         ((ByteBuffer)dataBuffer).put(buffer);
         if(!dataBuffer.hasRemaining())
-            processBuffer();
+            processBuffer((ByteBuffer)dataBuffer);
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
             data[i] = buffer[i]*100f / 256f;
@@ -159,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             return;
         ((ShortBuffer)dataBuffer).put(buffer);
         if(!dataBuffer.hasRemaining())
-            processBuffer();
+            processBuffer((ShortBuffer)dataBuffer);
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
             data[i] = buffer[i]*100f/4096f;
@@ -299,18 +299,33 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         return state;
     }
 
-    private void processBuffer(){
+    private void processBuffer(ByteBuffer dataBuffer){
+        float[] data = new float[dataBuffer.capacity()];
+        for(int i = 0 ; i < data.length ; i++)
+            data[i] = (0xFF&dataBuffer.get(i))/256f;
+        processBuffer(data);
+        byte[] buffer = new byte[dataBuffer.capacity()/2];
+        dataBuffer.position(buffer.length); //go to middle
+        dataBuffer.get(buffer);             //get from middle to end
+        dataBuffer.clear();                 //then shift the data start from middle to front
+        dataBuffer.put(buffer);
+    }
+
+    private void processBuffer(ShortBuffer dataBuffer){
+        float[] data = new float[dataBuffer.capacity()];
+        for(int i = 0 ; i < data.length ; i++)
+            data[i] = dataBuffer.get(i)/ 4096f;
+        processBuffer(data);
+        short[] buffer = new short[dataBuffer.capacity()/2];
+        dataBuffer.position(buffer.length); //go to middle
+        dataBuffer.get(buffer);             //get from middle to end
+        dataBuffer.clear();                 //then shift the data start from middle to front
+        dataBuffer.put(buffer);
+    }
+
+    private void processBuffer(float[] data){
         if(state != ActivityState.BEGIN_TEST)
             bleFragment.setBuffered12bitAdcNotification(false);
-        float[] data = new float[BUFFER_SIZE];
-        if(dataBuffer instanceof  ShortBuffer)
-            for(int i = 0 ; i < BUFFER_SIZE ; i++)
-                data[i] = ((ShortBuffer)dataBuffer).get(i)/4096f;
-        else if(dataBuffer instanceof ByteBuffer)
-            for(int i = 0 ; i < BUFFER_SIZE ; i++)
-                data[i] = (0xFF&((ByteBuffer)dataBuffer).get(i))/256f;
-        else throw new UnsupportedOperationException("Invalid buffer found when processing buffer!");
-        dataBuffer.clear();
         Log.d("processBuffer", "start processing data...");
         //TODO: apply median/mean filter to remove spikes.
         FloatFFT_1D fft = new FloatFFT_1D(data.length);

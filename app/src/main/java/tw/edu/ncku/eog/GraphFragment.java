@@ -111,7 +111,7 @@ public class GraphFragment extends Fragment {
                 spectrumSeries.resetData(dataPoints);
                 spectrumGraph.getViewport().setMaxX(dataPoints.length);
                 spectrumGraph.getViewport().setMaxY(maxRatio);
-                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX() + (dataPoints.length * 2 * samplingPeriod), powerRatio), true, Integer.MAX_VALUE);
+                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX() + (dataPoints.length * samplingPeriod), powerRatio), true, Integer.MAX_VALUE);
             }
         });
     }
