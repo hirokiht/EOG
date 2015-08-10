@@ -85,7 +85,7 @@ public class GraphFragment extends Fragment {
         rawDataSeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
     }
 
-    public void resetData(float[] data){
+    public void resetData(float[] data){    //data is FFT Result up to 32Hz with 50% overlap
         final DataPoint[] dataPoints = data == null ? new DataPoint[]{new DataPoint(0,0)} : new DataPoint[data.length];
         if(data == null){
             spectrumSeries.resetData(dataPoints);
@@ -104,14 +104,15 @@ public class GraphFragment extends Fragment {
             dataPoints[i] = new DataPoint((double)i/(samplingPeriod*2f*data.length),(double)data[i]/sum*100);
         final float maxRatio = sum == 0? 1f : max/sum*100;
         final double powerRatio = sum == 0? 0f : power/sum*100+0.5;
-        energyMeter.setProgress((int) powerRatio*10);   //set range is 0% to 10%
+        energyMeter.setProgress((int) powerRatio*2);   //set range is 0% to 50%
         handler.post(task = new Runnable() {
             @Override
             public void run() {
                 spectrumSeries.resetData(dataPoints);
                 spectrumGraph.getViewport().setMaxX(dataPoints.length);
                 spectrumGraph.getViewport().setMaxY(maxRatio);
-                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.getHighestValueX() + (dataPoints.length * samplingPeriod), powerRatio), true, Integer.MAX_VALUE);
+                alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.isEmpty()? dataPoints.length/32f :
+                        alphaEnergySeries.getHighestValueX() + dataPoints.length/64f, powerRatio), true, Integer.MAX_VALUE);
             }
         });
     }

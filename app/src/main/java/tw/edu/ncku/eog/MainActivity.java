@@ -35,7 +35,8 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private static GraphFragment graphFragment;
     private static ActivityState state = ActivityState.ENABLE_BLE;
     private static short sampling_period = 8;
-    private static int medianFilterWindowSize = 200;  //window size in ms for median filter
+    private static int medianFilterWindowSize = 0;  //window size in ms for median filter
+    private static float[] windowFunction = new float[BUFFER_SIZE];
     private static Buffer dataBuffer;
 
     @Override
@@ -46,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             graphFragment.resetData(null);
         else if(!started)
             graphFragment.resetData();
-        else dataLogger.setFilename(String.valueOf(System.currentTimeMillis()));
+        else dataLogger.setFilename(String.valueOf(System.currentTimeMillis())+"-");
     }
 
     private enum ActivityState{
@@ -56,6 +57,9 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        final float alpha = 0.54f, beta = 0.46f;
+        for(int i = 0 ; i < BUFFER_SIZE ; i++)
+            windowFunction[i] = alpha-beta*(float)Math.cos(2*Math.PI*i/(BUFFER_SIZE-1));
         fragmentManager = getFragmentManager();
         if(dataLogger == null)
             dataLogger = new DataLogger(getApplicationContext());
@@ -336,13 +340,16 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
                 data[i] = QuickSelect.getMedian(window);
             }
         }
+        for(int i = 0 ; i < data.length ; i++)
+            data[i] *= windowFunction[i];
         FloatFFT_1D fft = new FloatFFT_1D(data.length);
         fft.realForward(data);
-        float[] fftResult = new float[BUFFER_SIZE/2];
-        for(int i = 0 ; i < data.length ; i+=2)
+        int fftSize = 32*BUFFER_SIZE*sampling_period/1000;  //only take 1-32Hz data for Graphing
+        float[] fftResult = new float[fftSize];   //freq500/period
+        for(int i = 2 ; i < fftResult.length*2 ; i+=2)
             fftResult[i>>1] = data[i] * data[i] + data[i + 1] * data[i + 1];
         try {
-            dataLogger.logPostfixedData("FFT", data);
+            dataLogger.logPostfixedData("FFT", fftResult);
             dataLogger.flushPostfixedData("FFT");
         }catch(IOException ioe){
             Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
