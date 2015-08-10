@@ -56,7 +56,7 @@ public class GraphFragment extends Fragment {
         labelRenderer.setHorizontalAxisTitle(getString(R.string.x_label));
         labelRenderer.setVerticalAxisTitle(getString(R.string.y_label));
         energyGraph = (GraphView) view.findViewById(R.id.energy_graph);
-        energyGraph.setTitle("Raw Data/Energy/Time Graph");
+        energyGraph.setTitle(getString(R.string.energy_title));
         energyGraph.addSeries(alphaEnergySeries);
         rawDataSeries.setColor(0xffff0000);
         energyGraph.getSecondScale().addSeries(rawDataSeries);
@@ -66,10 +66,9 @@ public class GraphFragment extends Fragment {
         viewport.setScalable(true);
         viewport.setScrollable(true);
         labelRenderer = energyGraph.getGridLabelRenderer();
-        labelRenderer.setHorizontalAxisTitle("time (s)");
-        labelRenderer.setVerticalAxisTitle("Energy Ratio (%)");
+        labelRenderer.setHorizontalAxisTitle(getString(R.string.time_axis));
+        labelRenderer.setVerticalAxisTitle(getString(R.string.y_label));
         labelRenderer.setVerticalLabelsSecondScaleColor(0xffff0000);
-        view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1.5f));
         return view;
     }
 

@@ -18,4 +18,6 @@
     <string name="x_label">Frequency (Hz)</string>
     <string name="y_label">Energy Ratio(%)</string>
 
+    <string name="energy_title">Raw Data/Energy/Time Graph</string>
+    <string name="time_axis">Time (s)</string>
 </resources>
