@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private static ActivityState state = ActivityState.ENABLE_BLE;
     private static short sampling_period = 8;
     private static int medianFilterWindowSize = 0;  //window size in ms for median filter
-    private static float[] windowFunction = new float[BUFFER_SIZE];
+    private static float[] windowFunction = new float[BUFFER_SIZE]; //Window Function for Raw Data (Hamming Window is used)
     private static Buffer dataBuffer;
 
     @Override
