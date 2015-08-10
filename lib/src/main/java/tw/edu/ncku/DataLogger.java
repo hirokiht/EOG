@@ -1,7 +1,4 @@
-package tw.edu.ncku.eog;
-
-import android.content.Context;
-import android.support.v4.util.SimpleArrayMap;
+package tw.edu.ncku;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,22 +8,15 @@ import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class DataLogger {
     private String filename;
     private File dir;
-    private static SimpleArrayMap<String,BufferedWriter> dataWriter = new SimpleArrayMap<>();
-
-    public DataLogger(Context ctx){
-        this("",ctx);
-    }
+    private static HashMap<String,BufferedWriter> dataWriter = new HashMap<>();
 
     public DataLogger(File dir){
         this("",dir);
-    }
-
-    public DataLogger(String name, Context ctx){
-        this(name, ctx.getExternalFilesDir(null));
     }
 
     public DataLogger(String name, File directory){
@@ -87,13 +77,14 @@ public class DataLogger {
 
     public static void flush() throws IOException{
         ArrayList<String> keys = new ArrayList<>();
-        for(int i = 0 ; i < dataWriter.size() ; i++)
-            try {
-                dataWriter.valueAt(i).newLine();
-                dataWriter.valueAt(i).flush();
-            }catch(IOException ioe){
-                keys.add(dataWriter.keyAt(i) + ": " + ioe.getMessage());
+        for(String key : dataWriter.keySet()){
+            try{
+                dataWriter.get(key).newLine();
+                dataWriter.get(key).flush();
+            }catch (IOException ioe){
+                keys.add(key+": "+ioe.getMessage());
             }
+        }
         if(keys.isEmpty())
             return;
         throw new IOException("Flush failed for the following files:\n"+Arrays.toString(keys.toArray()));

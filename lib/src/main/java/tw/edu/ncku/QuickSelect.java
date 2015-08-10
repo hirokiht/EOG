@@ -1,4 +1,4 @@
-package tw.edu.ncku.eog;
+package tw.edu.ncku;
 
 public class QuickSelect {
     public static <E extends Comparable<? super E>> E getMedian(E[] arr) {

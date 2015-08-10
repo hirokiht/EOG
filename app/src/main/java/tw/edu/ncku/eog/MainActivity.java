@@ -24,6 +24,9 @@ import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
 
+import tw.edu.ncku.DataLogger;
+import tw.edu.ncku.QuickSelect;
+
 
 public class MainActivity extends AppCompatActivity implements BleFragment.AdcListener, TimerFragment.OnTimerListener{
     private final static int REQUEST_ENABLE_BT = 1;
@@ -62,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             windowFunction[i] = alpha-beta*(float)Math.cos(2*Math.PI*i/(BUFFER_SIZE-1));
         fragmentManager = getFragmentManager();
         if(dataLogger == null)
-            dataLogger = new DataLogger(getApplicationContext());
+            dataLogger = new DataLogger(getApplicationContext().getExternalFilesDir(null));
         setContentView(R.layout.activity_main);
         if(fragmentManager.findFragmentByTag("bleFragment") == null)
             fragmentManager.beginTransaction().add(bleFragment,"bleFragment").commit();
