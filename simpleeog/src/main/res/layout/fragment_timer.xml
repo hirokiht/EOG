@@ -1,0 +1,21 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"    android:layout_height="match_parent" tools:context="tw.edu.ncku.eog.TimerFragment">
+
+    <TimePicker
+        android:id="@+id/timePicker"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:timePickerMode="spinner"
+        />
+
+    <ToggleButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/testButton"
+        android:textOff="@string/start"
+        android:textOn="@string/reset"
+        android:enabled="false"
+        android:layout_gravity="center_horizontal|bottom" />
+
+</FrameLayout>

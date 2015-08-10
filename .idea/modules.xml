@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/EOG.iml" filepath="$PROJECT_DIR$/EOG.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/lib/lib.iml" filepath="$PROJECT_DIR$/lib/lib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/simpleeog/simpleeog.iml" filepath="$PROJECT_DIR$/simpleeog/simpleeog.iml" />
     </modules>
   </component>
 </project>
