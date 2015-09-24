@@ -30,14 +30,14 @@ import tw.edu.ncku.QuickSelect;
 
 public class MainActivity extends AppCompatActivity implements BleFragment.AdcListener, TimerFragment.OnTimerListener{
     private final static int REQUEST_ENABLE_BT = 1;
-    private final static int BUFFER_SIZE = 128;
+    private final static int BUFFER_SIZE = 32;
     private static DataLogger dataLogger;
     private FragmentManager fragmentManager;
     private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
     private static GraphFragment graphFragment;
     private static ActivityState state = ActivityState.ENABLE_BLE;
-    private static short sampling_period = 8;
+    private static short sampling_period = 31;
     private static int medianFilterWindowSize = 0;  //window size in ms for median filter
     private static float[] windowFunction = new float[BUFFER_SIZE]; //Window Function for Raw Data (Hamming Window is used)
     private static Buffer dataBuffer;
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         }catch(IOException ioe){
             Log.d("onDataBufferReceived","IOException: "+ioe.getMessage());
         }
-        graphFragment.appendRawData(data * 100f / 4096f);
+        graphFragment.appendRawData(data * 100f / 2048f);
     }
 
     @Override
@@ -153,7 +153,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             processBuffer((ByteBuffer)dataBuffer);
         float[] data = new float[buffer.length];
         for(int i = 0 ; i < buffer.length ; i++)
-            data[i] = buffer[i]*100f / 256f;
+            data[i] = buffer[i]*100f / 128f;
         try {
             dataLogger.logPostfixedData("RawData", buffer);
         }catch(IOException ioe){
@@ -170,8 +170,11 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
         if(!dataBuffer.hasRemaining())
             processBuffer((ShortBuffer)dataBuffer);
         float[] data = new float[buffer.length];
-        for(int i = 0 ; i < buffer.length ; i++)
-            data[i] = buffer[i]*100f/4096f;
+        for(int i = 0 ; i < buffer.length ; i++) {
+            if((buffer[i]&0x800) > 0)
+                buffer[i] |= 0xF000;
+            data[i] = buffer[i] * 100f / 2048f;
+        }
         try {
             dataLogger.logPostfixedData("RawData", buffer);
         }catch(IOException ioe){
@@ -311,7 +314,7 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
     private static void processBuffer(ByteBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
         for(int i = 0 ; i < data.length ; i++)
-            data[i] = (0xFF&dataBuffer.get(i))/256f;
+            data[i] = (0xFF&dataBuffer.get(i))/128f;
         processBuffer(data);
         byte[] buffer = new byte[dataBuffer.capacity()/2];
         dataBuffer.position(buffer.length); //go to middle
@@ -322,8 +325,13 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
 
     private static void processBuffer(ShortBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
-        for(int i = 0 ; i < data.length ; i++)
-            data[i] = dataBuffer.get(i)/ 4096f;
+        short tmp;
+        for(int i = 0 ; i < data.length ; i++) {
+            tmp = dataBuffer.get(i);
+            if((tmp&0x800) > 0)
+                tmp |= 0xF000;
+            data[i] = tmp/2048f;
+        }
         processBuffer(data);
         short[] buffer = new short[dataBuffer.capacity()/2];
         dataBuffer.position(buffer.length); //go to middle
@@ -347,10 +355,11 @@ public class MainActivity extends AppCompatActivity implements BleFragment.AdcLi
             data[i] *= windowFunction[i];
         FloatFFT_1D fft = new FloatFFT_1D(data.length);
         fft.realForward(data);
-        int fftSize = 32*BUFFER_SIZE*sampling_period/1000;  //only take 1-32Hz data for Graphing
-        float[] fftResult = new float[fftSize];   //freq500/period
-        for(int i = 2 ; i < fftResult.length*2 ; i+=2)
-            fftResult[i>>1] = data[i] * data[i] + data[i + 1] * data[i + 1];
+        float[] fftResult = new float[data.length/2+1];
+        fftResult[0] = data[0];
+        fftResult[fftResult.length-1] = data[1];
+        for(int i = 2 ; i < data.length ; i+=2)
+            fftResult[i>>1] = (float)Math.sqrt(data[i] * data[i] + data[i + 1] * data[i + 1]);
         try {
             dataLogger.logPostfixedData("FFT", fftResult);
             dataLogger.flushPostfixedData("FFT");

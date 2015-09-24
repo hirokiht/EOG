@@ -15,6 +15,7 @@
         android:id="@+id/energyMeter"
         style="?android:attr/progressBarStyleHorizontal"
         android:indeterminate="false"
+        android:scaleY="10"
         android:max="100"
         android:progress="0"
         android:layout_toEndOf="@id/energyLabel"

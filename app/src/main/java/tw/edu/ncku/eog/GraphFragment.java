@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
 import com.jjoe64.graphview.GraphView;
@@ -31,7 +30,7 @@ public class GraphFragment extends Fragment {
         rawDataSeries = new LineGraphSeries<>(), alphaEnergySeries = new LineGraphSeries<>();
     private final Handler handler = new Handler();
     private Runnable task;
-    private float samplingPeriod = 8f/1000f; //in seconds
+    private float samplingPeriod = 31f/1000f; //in seconds
 
     public GraphFragment() {
         setRetainInstance(true);
@@ -84,26 +83,23 @@ public class GraphFragment extends Fragment {
         rawDataSeries.resetData(new DataPoint[]{new DataPoint(0, 0)});
     }
 
-    public void resetData(float[] data){    //data is FFT Result up to 32Hz with 50% overlap
+    public void resetData( float[] data ){    //data is FFT Result up to 32Hz with 50% overlap
         final DataPoint[] dataPoints = data == null ? new DataPoint[]{new DataPoint(0,0)} : new DataPoint[data.length];
         if(data == null){
             spectrumSeries.resetData(dataPoints);
             return;
         }
-        float max = 0f, sum = 0f, power = 0f;
-        data[0] = 0f;
-        for(float d : data) {
+        float max = 0f, power = 0f;
+        for(float d : data)
             if(d > max)
                 max = d;
-            sum += d;
-        }
+        final float maxRatio = max;
         for(int i = BEGIN_FREQ ; i < END_FREQ ; i++)
             power += data[i];
         for(int i = 0 ; i < data.length; i++)
-            dataPoints[i] = new DataPoint((double)i/(samplingPeriod*2f*data.length),(double)data[i]/sum*100);
-        final float maxRatio = sum == 0? 1f : max/sum*100;
-        final double powerRatio = sum == 0? 0f : power/sum*100+0.5;
-        energyMeter.setProgress((int) powerRatio*2);   //set range is 0% to 50%
+            dataPoints[i] = new DataPoint((double)i/(samplingPeriod*2f*data.length),data[i]);
+        final double powerRatio = power/0.4f*100;
+        energyMeter.setProgress((int) (powerRatio+0.5));   //set range is 0% to 50%
         handler.post(task = new Runnable() {
             @Override
             public void run() {
@@ -111,7 +107,7 @@ public class GraphFragment extends Fragment {
                 spectrumGraph.getViewport().setMaxX(dataPoints.length);
                 spectrumGraph.getViewport().setMaxY(maxRatio);
                 alphaEnergySeries.appendData(new DataPoint(alphaEnergySeries.isEmpty()? dataPoints.length/32f :
-                        alphaEnergySeries.getHighestValueX() + dataPoints.length/64f, powerRatio), true, Integer.MAX_VALUE);
+                        alphaEnergySeries.getHighestValueX() + 0.5f, powerRatio), true, 30);
             }
         });
     }
@@ -128,23 +124,20 @@ public class GraphFragment extends Fragment {
         handler.post(task = new Runnable() {
             @Override
             public void run() {
-                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + samplingPeriod, data), true, Integer.MAX_VALUE);
-                energyGraph.getViewport().setMinX(0);
+                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + samplingPeriod, data), true, 480);
+                energyGraph.getViewport().setMinX((int)rawDataSeries.getLowestValueX());
                 energyGraph.getViewport().setMaxX(Math.ceil(rawDataSeries.getHighestValueX()));
             }
         });
     }
 
     public void appendRawData(@NonNull final float[] buffer ){
-        float sum = 0f;
-        for(float data : buffer)
-            sum += data;
-        final float avg = sum/buffer.length;
         handler.post(task = new Runnable() {
             @Override
             public void run() {
-                rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + (samplingPeriod * buffer.length), avg), true, Integer.MAX_VALUE);
-                energyGraph.getViewport().setMinX(0);
+                for(float data : buffer)
+                    rawDataSeries.appendData(new DataPoint(rawDataSeries.getHighestValueX() + samplingPeriod , data), true, 480);
+                energyGraph.getViewport().setMinX((int)rawDataSeries.getLowestValueX());
                 energyGraph.getViewport().setMaxX(Math.ceil(rawDataSeries.getHighestValueX()));
             }
         });

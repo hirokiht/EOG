@@ -24,23 +24,20 @@ import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
-import java.util.Arrays;
 
 import tw.edu.ncku.DataLogger;
-import tw.edu.ncku.QuickSelect;
 
 
 public class SimpleEogActivity extends AppCompatActivity implements BleFragment.AdcListener, TimerFragment.OnTimerListener{
     private final static int REQUEST_ENABLE_BT = 1;
-    private final static int BUFFER_SIZE = 128;
+    private final static int BUFFER_SIZE = 32;
     private static DataLogger dataLogger;
     private FragmentManager fragmentManager;
     private static BleFragment bleFragment = new BleFragment();
     private TimerFragment timerFragment;
     private static GraphFragment graphFragment;
     private static ActivityState state = ActivityState.ENABLE_BLE;
-    private static short sampling_period = 8;
-    private static int medianFilterWindowSize = 0;  //window size in ms for median filter
+    private static short sampling_period = 31;
     private static float[] windowFunction = new float[BUFFER_SIZE]; //Window Function for Raw Data (Hamming Window is used)
     private static Buffer dataBuffer;
 
@@ -50,7 +47,7 @@ public class SimpleEogActivity extends AppCompatActivity implements BleFragment.
         checkState();
         if(!started)
             graphFragment.resetData();
-        else dataLogger.setFilename(String.valueOf(System.currentTimeMillis())+"-");
+        else dataLogger.setFilename(String.valueOf(System.currentTimeMillis()) + "-");
     }
 
     private enum ActivityState{
@@ -75,7 +72,7 @@ public class SimpleEogActivity extends AppCompatActivity implements BleFragment.
             state = (ActivityState) savedInstanceState.getSerializable("state");
             sampling_period = bleFragment.getSamplingPeriod();
         }
-        graphFragment.setSamplingPeriod(sampling_period/1000f); //convert into second
+        graphFragment.setSamplingPeriod(sampling_period / 1000f); //convert into second
         checkState();
         if(savedInstanceState == null && state == ActivityState.ENABLE_BLE)  //request bt if it is the first time starting this app
             startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -302,7 +299,7 @@ public class SimpleEogActivity extends AppCompatActivity implements BleFragment.
     private static void processBuffer(ByteBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
         for(int i = 0 ; i < data.length ; i++)
-            data[i] = (0xFF&dataBuffer.get(i))/256f;
+            data[i] = (0xFF&dataBuffer.get(i))/128f;
         processBuffer(data);
         byte[] buffer = new byte[dataBuffer.capacity()/2];
         dataBuffer.position(buffer.length); //go to middle
@@ -313,8 +310,13 @@ public class SimpleEogActivity extends AppCompatActivity implements BleFragment.
 
     private static void processBuffer(ShortBuffer dataBuffer){
         float[] data = new float[dataBuffer.capacity()];
-        for(int i = 0 ; i < data.length ; i++)
-            data[i] = dataBuffer.get(i)/ 4096f;
+        short tmp;
+        for(int i = 0 ; i < data.length ; i++) {
+            tmp = dataBuffer.get(i);
+            if((tmp&0x800) > 0)
+                tmp |= 0xF000;
+            data[i] = tmp/2048f;
+        }
         processBuffer(data);
         short[] buffer = new short[dataBuffer.capacity()/2];
         dataBuffer.position(buffer.length); //go to middle
@@ -327,21 +329,15 @@ public class SimpleEogActivity extends AppCompatActivity implements BleFragment.
         if(state != ActivityState.BEGIN_TEST)
             bleFragment.setBuffered12bitAdcNotification(false);
         Log.d("processBuffer", "start processing data...");
-        if(medianFilterWindowSize > 0) {    //medianFilter is enabled and set
-            int size = medianFilterWindowSize / sampling_period;
-            for (int i = size / 2; i < data.length - size / 2; i++) {
-                float[] window = Arrays.copyOfRange(data, i - size / 2, i + size / 2);
-                data[i] = QuickSelect.getMedian(window);
-            }
-        }
         for(int i = 0 ; i < data.length ; i++)
             data[i] *= windowFunction[i];
         FloatFFT_1D fft = new FloatFFT_1D(data.length);
         fft.realForward(data);
-        int fftSize = 32*BUFFER_SIZE*sampling_period/1000;  //only take 1-32Hz data for Graphing
-        float[] fftResult = new float[fftSize];   //freq500/period
-        for(int i = 2 ; i < fftResult.length*2 ; i+=2)
-            fftResult[i>>1] = data[i] * data[i] + data[i + 1] * data[i + 1];
+        float[] fftResult = new float[data.length/2+1];
+        fftResult[0] = data[0];
+        fftResult[fftResult.length-1] = data[1];
+        for(int i = 2 ; i < data.length ; i+=2)
+            fftResult[i>>1] = (float) Math.sqrt(data[i] * data[i] + data[i + 1] * data[i + 1]);
         try {
             dataLogger.logPostfixedData("FFT", fftResult);
             dataLogger.flushPostfixedData("FFT");
